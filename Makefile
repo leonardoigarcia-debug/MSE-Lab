@@ -1,0 +1,39 @@
+include sources.mk
+
+EXEC = app.elf
+
+
+LINKER_FILE = stm32f4.ld
+CPU = cortex-m4
+ARCH = armv7e-m
+SPECS = nosys.specs
+FPU = fp4v-sp-d16
+
+ARCHFLAGS = -mcpu=$(CPU) -mthumb -march=$(ARCH) -mfloat-abi=hard -mfpu=$(FPU) --specs=$(SPECS)
+
+# Se crean referencias para archivos objeto de todos los archivos de código en c.
+OBJS := $(SRCS:.c=.o)
+
+CC = arm-none-eabi-gcc
+
+CFLAGS = -g -O0 -std=c99 -Werror -Wall $(ARCHFLAGS)
+
+LDFLAGS = -nostdlib -T $(LINKER_FILE)
+
+
+%.o : %.c
+	$(CC) -c $(CFLAGS) $< -o $@
+
+.PHONY : build 
+build : $(EXEC)
+
+$(EXEC) : $(OBJS)
+	$(CC) $(OBJS) $(CFLAGS) $(LDFLAGS) -o $@
+
+.PHONY : flash
+flash : 
+	openocd -f board/st_nucleo_f4.cfg -c "program $(EXEC) verify reset" -c shutdown
+
+.PHONY : clean
+clean : 
+	rm -f $(OBJS) $(EXEC)
